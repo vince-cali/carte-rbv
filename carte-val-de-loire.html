@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carte des grappes de résidences — RBV</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin:0; height:100%; font-family: system-ui, Arial, sans-serif; }
+  #map { height:100vh; width:100%; }
+  .badge {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    line-height:1.05; text-align:center; white-space:nowrap;
+    border-radius:14px; padding:3px 7px; color:#fff;
+    border:2px solid rgba(255,255,255,.85);
+    box-shadow:0 1px 3px rgba(0,0,0,.45); font-weight:600;
+  }
+  .badge .nom { font-size:10px; }
+  .badge .pop { font-size:12px; font-weight:800; }
+  .badge.centre { border:3px solid #fff; box-shadow:0 0 0 2px #222, 0 1px 4px rgba(0,0,0,.5); }
+  .leaflet-tooltip.pop-tt { font-size:12px; }
+  /* Mode cartouches masquées : pastilles seules */
+  .labels-hidden .badge { width:13px; height:13px; padding:0; border-radius:50%; }
+  .labels-hidden .badge .nom { display:none; }
+  .toggle-btn {
+    background:#fff; padding:6px 10px; font-size:13px; cursor:pointer;
+    border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.3); font-weight:600; user-select:none;
+  }
+  .legend {
+    background:#fff; padding:10px 12px; border-radius:8px; line-height:1.6;
+    box-shadow:0 1px 5px rgba(0,0,0,.3); font-size:13px;
+  }
+  .legend .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .legend h4 { margin:0 0 6px; font-size:13px; }
+  .legend small { color:#555; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const grappes = [
+  { id:1, nom:"Grappe 1 — La Ferté-Bernard", color:"#e53935", communes:[
+    {n:"La Ferté-Bernard",d:72,centre:true,lat:48.1856,lon:0.6536,pop:9072},
+    {n:"Cherré-Au",d:72,lat:48.1939,lon:0.6075,pop:2493},
+    {n:"Nogent-le-Rotrou",d:28,lat:48.3225,lon:0.8217,pop:9784},
+    {n:"Bonnétable",d:72,lat:48.1797,lon:0.4267,pop:3886},
+    {n:"Vibraye",d:72,lat:48.0561,lon:0.7444,pop:2576},
+    {n:"Mamers",d:72,lat:48.3503,lon:0.3711,pop:5187},
+    {n:"Saint-Calais",d:72,lat:47.9214,lon:0.7456,pop:3187},
+    {n:"Savigné-l'Évêque",d:72,lat:48.0917,lon:0.3433,pop:4639},
+    {n:"Mortagne-au-Perche",d:61,lat:48.5217,lon:0.5453,pop:3784},
+    {n:"Champagné",d:72,lat:48.0119,lon:0.3142,pop:4012},
+    {n:"Yvré-l'Évêque",d:72,lat:48.0119,lon:0.2628,pop:4262}
+  ]},
+  { id:2, nom:"Grappe 2 — Vendôme", color:"#1e88e5", communes:[
+    {n:"Vendôme",d:41,centre:true,lat:47.7928,lon:1.0656,pop:16224},
+    {n:"Saint-Ouen",d:41,lat:47.8089,lon:1.0747,pop:3289},
+    {n:"Montoire-sur-le-Loir",d:41,lat:47.7503,lon:0.8678,pop:3796},
+    {n:"Château-Renault",d:37,lat:47.5917,lon:0.9117,pop:5179},
+    {n:"Fossé",d:41,lat:47.6242,lon:1.3047,pop:1821},
+    {n:"Villebarou",d:41,lat:47.6128,lon:1.3206,pop:2336},
+    {n:"La Chaussée-Saint-Victor",d:41,lat:47.6133,lon:1.3539,pop:4419},
+    {n:"Saint-Gervais-la-Forêt",d:41,lat:47.5694,lon:1.3422,pop:3214},
+    {n:"Vineuil",d:41,lat:47.5894,lon:1.3700,pop:7438},
+    {n:"Mer",d:41,lat:47.6939,lon:1.5008,pop:6037},
+    {n:"Châteaudun",d:28,lat:48.0719,lon:1.3267,pop:13002}
+  ]},
+  { id:3, nom:"Grappe 3 — Romorantin-Lanthenay", color:"#43a047", communes:[
+    {n:"Romorantin-Lanthenay",d:41,centre:true,lat:47.3578,lon:1.7444,pop:16780},
+    {n:"Villefranche-sur-Cher",d:41,lat:47.3019,lon:1.7717,pop:2398},
+    {n:"Selles-sur-Cher",d:41,lat:47.2769,lon:1.5544,pop:4347},
+    {n:"Salbris",d:41,lat:47.4253,lon:2.0489,pop:5481},
+    {n:"Chabris",d:36,lat:47.2389,lon:1.6669,pop:2592},
+    {n:"Gièvres",d:41,lat:47.2828,lon:1.6678,pop:2807},
+    {n:"Noyers-sur-Cher",d:41,lat:47.2858,lon:1.4097,pop:2685},
+    {n:"Saint-Aignan",d:41,lat:47.2683,lon:1.3742,pop:2977},
+    {n:"Vierzon",d:18,lat:47.2228,lon:2.0703,pop:25725},
+    {n:"Lamotte-Beuvron",d:41,lat:47.6011,lon:2.0289,pop:4815},
+    {n:"Le Controis-en-Sologne",d:41,lat:47.4319,lon:1.5061,pop:3614}
+  ]},
+  { id:4, nom:"Grappe 4 — Amboise", color:"#fdd835", communes:[
+    {n:"Amboise",d:37,centre:true,lat:47.4131,lon:0.9856,pop:13002},
+    {n:"Nazelles-Négron",d:37,lat:47.4253,lon:0.9614,pop:3716},
+    {n:"Bléré",d:37,lat:47.3258,lon:0.9897,pop:5418},
+    {n:"Montlouis-sur-Loire",d:37,lat:47.3858,lon:0.8281,pop:10788},
+    {n:"Vouvray",d:37,lat:47.4111,lon:0.7958,pop:3097},
+    {n:"Monnaie",d:37,lat:47.4889,lon:0.7567,pop:4219},
+    {n:"Véretz",d:37,lat:47.3667,lon:0.7589,pop:4327},
+    {n:"Azay-sur-Cher",d:37,lat:47.3417,lon:0.7269,pop:3438},
+    {n:"La Ville-aux-Dames",d:37,lat:47.3878,lon:0.7567,pop:5224},
+    {n:"Larçay",d:37,lat:47.3611,lon:0.7406,pop:2405},
+    {n:"Saint-Martin-le-Beau",d:37,lat:47.3489,lon:0.8956,pop:3015}
+  ]},
+  { id:5, nom:"Grappe 5 — Mulsanne", color:"#8e24aa", communes:[
+    {n:"Saint-Mars-d'Outillé",d:72,lat:47.8761,lon:0.2989,pop:2316},
+    {n:"Changé",d:72,lat:47.9381,lon:0.2622,pop:5512},
+    {n:"Mulsanne",d:72,centre:true,lat:47.9197,lon:0.2389,pop:5224},
+    {n:"Parigné-l'Évêque",d:72,lat:47.9419,lon:0.3306,pop:4632},
+    {n:"Ruaudin",d:72,lat:47.9533,lon:0.2456,pop:4016},
+    {n:"Écommoy",d:72,lat:47.8294,lon:0.2719,pop:4789},
+    {n:"Téloché",d:72,lat:47.9008,lon:0.2811,pop:3014},
+    {n:"Arnage",d:72,lat:47.9281,lon:0.1881,pop:5497},
+    {n:"Mayet",d:72,lat:47.7656,lon:0.2742,pop:3001},
+    {n:"Allonnes",d:72,lat:47.9658,lon:0.1606,pop:3005},
+    {n:"Le Grand-Lucé",d:72,lat:47.8678,lon:0.4575,pop:2204}
+  ]}
+];
+
+const map = L.map('map');
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:18, attribution:'&copy; OpenStreetMap'
+}).addTo(map);
+
+const fmt = n => n.toLocaleString('fr-FR');
+const overlays = {};
+const allBounds = [];
+
+grappes.forEach(g => {
+  const layer = L.layerGroup();
+  g.communes.forEach(c => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="badge ${c.centre?'centre':''}" style="background:${g.color};${g.color==='#fdd835'?'color:#333;text-shadow:none;':''}">
+              <span class="nom">${c.centre?'★ ':''}${c.n}</span>
+            </div>`,
+      iconSize:null, iconAnchor:[0,0]
+    });
+    const m = L.marker([c.lat,c.lon],{icon}).addTo(layer);
+    m.bindTooltip(`<b>${c.n}</b><br>${fmt(c.pop)} hab.`, {className:'pop-tt', direction:'top', offset:[0,-6]});
+    m.bindPopup(`<b>${c.n}</b> (${c.d})<br>Population : <b>${fmt(c.pop)}</b> hab.<br>${g.nom}`);
+    allBounds.push([c.lat,c.lon]);
+  });
+  layer.addTo(map);
+  const total = g.communes.reduce((s,c)=>s+c.pop,0);
+  overlays[`<span style="color:${g.color};font-weight:700">●</span> ${g.nom} <small>(${fmt(total)} hab.)</small>`] = layer;
+});
+
+L.control.layers(null, overlays, {collapsed:true}).addTo(map);
+
+const toggle = L.control({position:'topleft'});
+toggle.onAdd = function(){
+  const b = L.DomUtil.create('div','toggle-btn');
+  b.innerHTML = 'Masquer les noms';
+  L.DomEvent.disableClickPropagation(b);
+  b.onclick = () => {
+    const hidden = document.body.classList.toggle('labels-hidden');
+    b.innerHTML = hidden ? 'Afficher les noms' : 'Masquer les noms';
+  };
+  return b;
+};
+toggle.addTo(map);
+map.fitBounds(allBounds, {padding:[40,40]});
+
+const legend = L.control({position:'bottomleft'});
+legend.onAdd = function(){
+  const div = L.DomUtil.create('div','legend');
+  let rows = '';
+  grappes.forEach(g=>{
+    const total = g.communes.reduce((s,c)=>s+c.pop,0);
+    rows += `<div><span class="dot" style="background:${g.color}"></span>${g.nom} — <b>${fmt(total)}</b> hab.</div>`;
+  });
+  div.innerHTML = `<h4 class="legend-toggle">Grappes de résidences <span class="arrow">▾</span></h4>`+
+                  `<div class="legend-body">${rows}<small>★ = centre de grappe · Données population : ordre de grandeur INSEE</small></div>`;
+  L.DomEvent.disableClickPropagation(div);
+  const head = div.querySelector('.legend-toggle');
+  const body = div.querySelector('.legend-body');
+  const arrow = div.querySelector('.arrow');
+  head.style.cursor = 'pointer';
+  head.onclick = () => {
+    const hidden = body.style.display === 'none';
+    body.style.display = hidden ? 'block' : 'none';
+    arrow.textContent = hidden ? '▾' : '▸';
+  };
+  return div;
+};
+legend.addTo(map);
+</script>
+</body>
+</html>

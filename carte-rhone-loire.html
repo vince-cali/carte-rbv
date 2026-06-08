@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carte des grappes — Rhône / Loire / Haute-Loire — RBV</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin:0; height:100%; font-family: system-ui, Arial, sans-serif; }
+  #map { height:100vh; width:100%; }
+  .badge {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    line-height:1.05; text-align:center; white-space:nowrap;
+    border-radius:14px; padding:3px 7px; color:#fff;
+    border:2px solid rgba(255,255,255,.85);
+    box-shadow:0 1px 3px rgba(0,0,0,.45); font-weight:600;
+  }
+  .badge .nom { font-size:10px; }
+  .badge.centre { border:3px solid #fff; box-shadow:0 0 0 2px #222, 0 1px 4px rgba(0,0,0,.5); }
+  .leaflet-tooltip.pop-tt { font-size:12px; }
+  /* Mode cartouches masquées : pastilles seules */
+  .labels-hidden .badge { width:13px; height:13px; padding:0; border-radius:50%; }
+  .labels-hidden .badge .nom { display:none; }
+  .toggle-btn {
+    background:#fff; padding:6px 10px; font-size:13px; cursor:pointer;
+    border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.3); font-weight:600; user-select:none;
+  }
+  .legend {
+    background:#fff; padding:10px 12px; border-radius:8px; line-height:1.6;
+    box-shadow:0 1px 5px rgba(0,0,0,.3); font-size:13px;
+  }
+  .legend .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; border:1px solid #999;}
+  .legend h4 { margin:0 0 6px; font-size:13px; }
+  .legend small { color:#555; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Couleurs claires nécessitant un texte foncé
+const lightColors = ["#ffa500","#00ffff"];
+
+const grappes = [
+  { id:1, nom:"Grappe Pays Rhodanien — Saint-Romain-en-Gal", color:"#ffa500", communes:[
+    {n:"Saint-Romain-en-Gal",d:69,centre:true,lat:45.5317,lon:4.8639,pop:2550},
+    {n:"Loire-sur-Rhône",d:69,lat:45.5614,lon:4.8053,pop:2700},
+    {n:"Jardin",d:38,lat:45.4986,lon:4.9083,pop:2700},
+    {n:"Seyssuel",d:38,lat:45.5592,lon:4.8364,pop:2600},
+    {n:"Villette-de-Vienne",d:38,lat:45.5864,lon:4.8878,pop:2700},
+    {n:"Chasse-sur-Rhône",d:38,lat:45.5786,lon:4.8006,pop:6400},
+    {n:"Condrieu",d:69,lat:45.4253,lon:4.7672,pop:4000},
+    {n:"Estrablin",d:38,lat:45.5175,lon:4.9653,pop:3650},
+    {n:"Pélussin",d:42,lat:45.4181,lon:4.6911,pop:3800},
+    {n:"Roussillon",d:38,lat:45.3722,lon:4.8144,pop:8600}
+  ]},
+  { id:2, nom:"Grappe Vallée du Gier — Pays de Mornant", color:"#ff00ff", communes:[
+    {n:"L'Horme",d:42,lat:45.4878,lon:4.5444,pop:4800},
+    {n:"Sorbiers",d:42,lat:45.4878,lon:4.4508,pop:8000},
+    {n:"Lorette",d:42,lat:45.5122,lon:4.5850,pop:4700},
+    {n:"Rive-de-Gier",d:42,centre:true,lat:45.5292,lon:4.6178,pop:15200},
+    {n:"Genilac",d:42,lat:45.5311,lon:4.5778,pop:4000},
+    {n:"Saint-Priest-en-Jarez",d:42,lat:45.4744,lon:4.3778,pop:6100},
+    {n:"Saint-Paul-en-Jarez",d:42,lat:45.4794,lon:4.5744,pop:4900},
+    {n:"Mornant",d:69,lat:45.6183,lon:4.6728,pop:6200},
+    {n:"Beauvallon",d:69,lat:45.5861,lon:4.6983,pop:4100},
+    {n:"Saint-Martin-la-Plaine",d:42,lat:45.5456,lon:4.5933,pop:3800}
+  ]},
+  { id:3, nom:"Grappe Plaine du Forez — Andrézieux-Bouthéon", color:"#00ffff", communes:[
+    {n:"Andrézieux-Bouthéon",d:42,centre:true,lat:45.5269,lon:4.2600,pop:10200},
+    {n:"La Fouillouse",d:42,lat:45.5014,lon:4.3125,pop:4700},
+    {n:"Saint-Just-Saint-Rambert",d:42,lat:45.4994,lon:4.2414,pop:15400},
+    {n:"Veauche",d:42,lat:45.5622,lon:4.2775,pop:9000},
+    {n:"Saint-Galmier",d:42,lat:45.5906,lon:4.3189,pop:5800},
+    {n:"Sury-le-Comtal",d:42,lat:45.5386,lon:4.1833,pop:6800},
+    {n:"Saint-Bonnet-les-Oules",d:42,lat:45.5425,lon:4.2983,pop:2700},
+    {n:"Saint-Héand",d:42,lat:45.5294,lon:4.3731,pop:3600},
+    {n:"Montbrison",d:42,lat:45.6067,lon:4.0653,pop:16000},
+    {n:"Saint-Genest-Lerpt",d:42,lat:45.4464,lon:4.3364,pop:6100}
+  ]},
+  { id:4, nom:"Grappe Loire / Haute-Loire — Aurec-sur-Loire", color:"#8b4513", communes:[
+    {n:"Aurec-sur-Loire",d:43,centre:true,lat:45.3694,lon:4.2006,pop:6100},
+    {n:"Saint-Paul-en-Cornillon",d:42,lat:45.3975,lon:4.2408,pop:3200},
+    {n:"Saint-Just-Malmont",d:43,lat:45.3383,lon:4.3125,pop:4200},
+    {n:"Monistrol-sur-Loire",d:43,lat:45.2933,lon:4.1714,pop:8900},
+    {n:"Unieux",d:42,lat:45.4011,lon:4.2619,pop:8400},
+    {n:"Bas-en-Basset",d:43,lat:45.3061,lon:4.1108,pop:4400},
+    {n:"Sainte-Sigolène",d:43,lat:45.2422,lon:4.2344,pop:6000},
+    {n:"Saint-Genest-Malifaux",d:42,lat:45.3403,lon:4.4203,pop:2900},
+    {n:"Beauzac",d:43,lat:45.2594,lon:4.0983,pop:3000},
+    {n:"Roche-la-Molière",d:42,lat:45.4353,lon:4.3236,pop:9800}
+  ]},
+  { id:5, nom:"Grappe Les Avenières — Les Avenières Veyrins-Thuellin", color:"#4a4a4a", communes:[
+    {n:"Les Avenières Veyrins-Thuellin",d:38,centre:true,lat:45.6353,lon:5.5622,pop:7800},
+    {n:"Saint-Genix-les-Villages",d:73,lat:45.6003,lon:5.6344,pop:3000},
+    {n:"Morestel",d:38,lat:45.6764,lon:5.4703,pop:4500},
+    {n:"Saint-Chef",d:38,lat:45.6344,lon:5.3658,pop:3700},
+    {n:"Dolomieu",d:38,lat:45.6111,lon:5.4981,pop:3200},
+    {n:"Le Pont-de-Beauvoisin",d:"38/73",lat:45.5344,lon:5.6664,pop:6300},
+    {n:"Saint-André-le-Gaz",d:38,lat:45.5544,lon:5.5286,pop:3200},
+    {n:"Saint-Savin",d:38,lat:45.5961,lon:5.3139,pop:3500},
+    {n:"La Tour-du-Pin",d:38,lat:45.5647,lon:5.4419,pop:8200},
+    {n:"Les Abrets en Dauphiné",d:38,lat:45.5369,lon:5.5864,pop:6500}
+  ]},
+  { id:6, nom:"Grappe autour de Culoz — Culoz-Béon", color:"#808000", communes:[
+    {n:"Culoz-Béon",d:1,centre:true,lat:45.8486,lon:5.7811,pop:3500},
+    {n:"Seyssel",d:"74/01",lat:45.9586,lon:5.8311,pop:2800},
+    {n:"Yenne",d:73,lat:45.7042,lon:5.7597,pop:3100},
+    {n:"Belley",d:1,lat:45.7592,lon:5.6881,pop:9300},
+    {n:"Rumilly",d:74,lat:45.8567,lon:5.9403,pop:16000},
+    {n:"Grésy-sur-Aix",d:73,lat:45.7231,lon:5.9339,pop:4600},
+    {n:"Brison-Saint-Innocent",d:73,lat:45.7225,lon:5.8894,pop:2450},
+    {n:"Vallières-sur-Fier",d:74,lat:45.9036,lon:5.9367,pop:3350},
+    {n:"La Balme-de-Sillingy",d:74,lat:45.9614,lon:6.0403,pop:5100},
+    {n:"Entrelacs",d:73,lat:45.7869,lon:5.9453,pop:6400}
+  ]},
+  { id:7, nom:"Grappe Tain-l'Hermitage — Tain-l'Hermitage", color:"#800020", communes:[
+    {n:"Tain-l'Hermitage",d:26,centre:true,lat:45.0686,lon:4.8422,pop:6300},
+    {n:"Tournon-sur-Rhône",d:7,lat:45.0669,lon:4.8319,pop:11200},
+    {n:"Saint-Donat-sur-l'Herbasse",d:26,lat:45.1233,lon:4.9194,pop:4300},
+    {n:"Saint-Péray",d:7,lat:44.9492,lon:4.8444,pop:7600},
+    {n:"Guilherand-Granges",d:7,lat:44.9342,lon:4.8744,pop:11000},
+    {n:"Bourg-lès-Valence",d:26,lat:44.9472,lon:4.8961,pop:20000},
+    {n:"La Roche-de-Glun",d:26,lat:45.0117,lon:4.8464,pop:3500},
+    {n:"Andance",d:7,lat:45.2417,lon:4.7997,pop:2800},
+    {n:"Saint-Vallier",d:26,lat:45.1744,lon:4.8153,pop:4000},
+    {n:"Châteauneuf-sur-Isère",d:26,lat:45.0136,lon:4.9356,pop:4000}
+  ]}
+];
+
+const map = L.map('map');
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:18, attribution:'&copy; OpenStreetMap'
+}).addTo(map);
+
+const fmt = n => n.toLocaleString('fr-FR');
+const overlays = {};
+const allBounds = [];
+
+grappes.forEach(g => {
+  const layer = L.layerGroup();
+  const dark = lightColors.includes(g.color);
+  g.communes.forEach(c => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="badge ${c.centre?'centre':''}" style="background:${g.color};${dark?'color:#222;text-shadow:none;':''}">
+              <span class="nom">${c.centre?'★ ':''}${c.n}</span>
+            </div>`,
+      iconSize:null, iconAnchor:[0,0]
+    });
+    const m = L.marker([c.lat,c.lon],{icon}).addTo(layer);
+    m.bindTooltip(`<b>${c.n}</b><br>${fmt(c.pop)} hab.`, {className:'pop-tt', direction:'top', offset:[0,-6]});
+    m.bindPopup(`<b>${c.n}</b> (${c.d})<br>Population : <b>${fmt(c.pop)}</b> hab.<br>${g.nom}`);
+    allBounds.push([c.lat,c.lon]);
+  });
+  layer.addTo(map);
+  const total = g.communes.reduce((s,c)=>s+c.pop,0);
+  overlays[`<span style="color:${g.color};font-weight:700">●</span> ${g.nom} <small>(${fmt(total)} hab.)</small>`] = layer;
+});
+
+L.control.layers(null, overlays, {collapsed:true}).addTo(map);
+map.fitBounds(allBounds, {padding:[40,40]});
+
+const toggle = L.control({position:'topleft'});
+toggle.onAdd = function(){
+  const b = L.DomUtil.create('div','toggle-btn');
+  b.innerHTML = 'Masquer les noms';
+  L.DomEvent.disableClickPropagation(b);
+  b.onclick = () => {
+    const hidden = document.body.classList.toggle('labels-hidden');
+    b.innerHTML = hidden ? 'Afficher les noms' : 'Masquer les noms';
+  };
+  return b;
+};
+toggle.addTo(map);
+
+const legend = L.control({position:'bottomleft'});
+legend.onAdd = function(){
+  const div = L.DomUtil.create('div','legend');
+  let rows = '';
+  grappes.forEach(g=>{
+    const total = g.communes.reduce((s,c)=>s+c.pop,0);
+    rows += `<div><span class="dot" style="background:${g.color}"></span>${g.nom} — <b>${fmt(total)}</b> hab.</div>`;
+  });
+  div.innerHTML = `<h4 class="legend-toggle">Grappes de résidences <span class="arrow">▾</span></h4>`+
+                  `<div class="legend-body">${rows}<small>★ = centre de grappe · Survol / clic = population</small></div>`;
+  L.DomEvent.disableClickPropagation(div);
+  const head = div.querySelector('.legend-toggle');
+  const body = div.querySelector('.legend-body');
+  const arrow = div.querySelector('.arrow');
+  head.style.cursor = 'pointer';
+  head.onclick = () => {
+    const hidden = body.style.display === 'none';
+    body.style.display = hidden ? 'block' : 'none';
+    arrow.textContent = hidden ? '▾' : '▸';
+  };
+  return div;
+};
+legend.addTo(map);
+</script>
+</bo

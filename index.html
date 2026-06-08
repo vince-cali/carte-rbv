@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Résidences Bien Vivre — Cartes des grappes</title>
+<style>
+  :root{ --bleu:#1F4E78; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,Arial,sans-serif; color:#222; background:#f5f7fa; }
+  header{ background:var(--bleu); color:#fff; padding:28px 20px; }
+  header h1{ margin:0; font-size:22px; }
+  header p{ margin:6px 0 0; opacity:.9; font-size:14px; }
+  main{ max-width:880px; margin:30px auto; padding:0 20px; }
+  .cards{ display:flex; flex-wrap:wrap; gap:20px; }
+  .card{ flex:1 1 320px; background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.12);
+         padding:22px; text-decoration:none; color:inherit; transition:transform .12s, box-shadow .12s; }
+  .card:hover{ transform:translateY(-3px); box-shadow:0 4px 16px rgba(0,0,0,.18); }
+  .card h2{ margin:0 0 8px; font-size:18px; color:var(--bleu); }
+  .card p{ margin:0; font-size:14px; color:#555; line-height:1.5; }
+  .pill{ display:inline-block; margin-top:14px; background:var(--bleu); color:#fff;
+         padding:7px 14px; border-radius:20px; font-size:13px; font-weight:600; }
+  footer{ max-width:880px; margin:20px auto 40px; padding:0 20px; font-size:12px; color:#888; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Résidences Bien Vivre — Cartes des grappes d'implantation</h1>
+  <p>Cartes interactives : grappes par couleur, population par commune (survol/clic), calque activable par grappe.</p>
+</header>
+<main>
+  <div class="cards">
+    <a class="card" href="carte-val-de-loire.html">
+      <h2>Val de Loire / Sarthe</h2>
+      <p>5 grappes, 55 communes. Centres : La Ferté-Bernard, Vendôme, Romorantin-Lanthenay, Amboise, Mulsanne.</p>
+      <span class="pill">Ouvrir la carte →</span>
+    </a>
+    <a class="card" href="carte-rhone-loire.html">
+      <h2>Rhône / Loire / Haute-Loire</h2>
+      <p>7 grappes, 70 communes. Pays Rhodanien, Vallée du Gier, Plaine du Forez, Aurec, Les Avenières, Culoz, Tain-l'Hermitage.</p>
+      <span class="pill">Ouvrir la carte →</span>
+    </a>
+  </div>
+</main>
+<footer>
+  Données population : ordre de grandeur (à fiabiliser INSEE) · Fond cartographique © OpenStreetMap.
+</footer>
+</body>
+</html>
